@@ -1,0 +1,11 @@
+jid: upload.siacs.eu
+secret: something
+storage_path : ./
+whitelist:
+  - jabber.ccc.de
+  - siacs.eu
+  - gultsch.de
+max_file_size: 20971520 #20MiB
+http_port: 8080
+get_url : http://upload.siacs.eu:8080
+put_url : http://upload.siacs.eu:8080
