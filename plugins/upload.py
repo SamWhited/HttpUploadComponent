@@ -9,10 +9,10 @@ class upload(base_plugin):
     def plugin_init(self):
         self.description = "upload files via http"
         self.xep = "0999"
-        self.xmpp['xep_0030'].add_feature("urn:xmpp:http:upload")
+        self.xmpp['xep_0030'].add_feature("eu:siacs:conversations:http:upload")
         self.xmpp.register_handler(
             Callback('Upload request',
-                MatchXPath('{%s}iq/{urn:xmpp:http:upload}request' % self.xmpp.default_ns),
+                MatchXPath('{%s}iq/{eu:siacs:conversations:http:upload}request' % self.xmpp.default_ns),
                 self._handleUpload))
         register_stanza_plugin(Iq, UploadRequest)
         register_stanza_plugin(Iq, UploadSlot)
@@ -24,14 +24,14 @@ class upload(base_plugin):
 
 
 class UploadRequest(ElementBase):
-    namespace = "urn:xmpp:http:upload"
+    namespace = "eu:siacs:conversations:http:upload"
     name = "request"
     plugin_attrib = "request"
     interfaces = set(('size','filename'))
     sub_interfaces = interfaces
 
 class UploadSlot(ElementBase):
-    namespace = "urn:xmpp:http:upload"
+    namespace = "eu:siacs:conversations:http:upload"
     name = "slot"
     plugin_attrib = "slot"
     interfaces = set(('put','get'))
