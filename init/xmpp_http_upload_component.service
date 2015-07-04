@@ -1,0 +1,10 @@
+[Unit]
+Description=XMPP component for HTTP file uploads
+After=network.target
+
+[Service]
+type=simple
+ExecStart=/usr/bin/xmpp_http_upload_server.py
+
+[Install]
+WantedBy=multi-user.target
