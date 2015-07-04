@@ -9,8 +9,14 @@ import random
 import os
 from threading import Thread
 from threading import Lock
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from socketserver import ThreadingMixIn
+try:
+    # Python 3
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+    from socketserver import ThreadingMixIn
+except ImportError:
+    # Python 2
+    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+    from SocketServer import ThreadingMixIn
 import sleekxmpp
 from sleekxmpp.componentxmpp import ComponentXMPP
 
@@ -142,12 +148,12 @@ class HttpHandler(BaseHTTPRequestHandler):
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
- 
+
 if __name__ == "__main__":
     global files
     global files_lock
     global config
-    
+
     with open('config.yml','r') as ymlfile:
         config = yaml.load(ymlfile)
 
