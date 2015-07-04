@@ -24,6 +24,13 @@ global files
 global files_lock
 global config
 
+def normalize_path(path):
+    """
+    Normalizes the URL to prevent users from grabbing arbitrary files via `../'
+    and the like.
+    """
+    return os.path.normcase(os.path.normpath(path))
+
 class MissingComponent(ComponentXMPP):
     def __init__(self, jid, secret):
         ComponentXMPP.__init__(self, jid, secret, "localhost", 5347)
@@ -47,15 +54,15 @@ class MissingComponent(ComponentXMPP):
             filename = request['filename']
             folder = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(len(sender_hash)))
             sane_filename = "".join([c for c in filename if c.isalpha() or c.isdigit() or c=="."]).rstrip()
-            path = sender_hash+'/'+folder
+            path = os.path.join(sender_hash, folder)
             if sane_filename:
-                path += '/'+sane_filename
+                path = os.path.join(path, sane_filename)
             with files_lock:
                 files.add(path)
             print(path)
             reply = iq.reply()
-            reply['slot']['get'] = config['get_url'] + '/' + path
-            reply['slot']['put'] = config['put_url'] + '/' + path
+            reply['slot']['get'] = os.path.join(config['get_url'], path)
+            reply['slot']['put'] = os.path.join(config['put_url'], path)
             reply.send()
         else:
            self. _sendError(iq,'cancel','not-allowed','not allowed to request upload slots')
@@ -74,7 +81,7 @@ class HttpHandler(BaseHTTPRequestHandler):
         global files
         global files_lock
         global config
-        path = self.path[1:]
+        path = normalize_path(self.path[1:])
         length = int(self.headers['Content-Length'])
         maxfilesize = int(config['max_file_size'])
         if maxfilesize < length:
@@ -86,7 +93,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             if path in files:
                 files.remove(path)
                 files_lock.release()
-                filename = config['storage_path'] + path
+                filename = os.path.join(config['storage_path'], path)
                 os.makedirs(os.path.dirname(filename))
                 remaining = length
                 f = open(filename,'wb')
@@ -105,13 +112,13 @@ class HttpHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         global config
-        path = self.path[1:].replace('../','').replace('./','')
+        path = normalize_path(self.path[1:])
         slashcount = path.count('/')
         if slashcount < 1 or slashcount > 2:
             self.send_response(404,'file not found')
             self.end_headers()
         else:
-            filename = config['storage_path']+'/'+path
+            filename = os.path.join(config['storage_path'], path)
             print('requesting file: '+filename)
             try:
                 with open(filename,'rb') as f:
@@ -128,14 +135,14 @@ class HttpHandler(BaseHTTPRequestHandler):
 
     def do_HEAD(self):
         global config
-        path = self.path[1:].replace('../','').replace('./','')
+        path = normalize_path(self.path[1:])
         slashcount = path.count('/')
         if slashcount < 1 or slashcount > 2:
             self.send_response(404,'file not found')
             self.end_headers()
         else:
             try:
-                filename = config['storage_path']+'/'+path
+                filename = os.path.join(config['storage_path'], path)
                 self.send_response(200,'OK')
                 self.send_header("Content-Type", 'application/octet-stream')
                 self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(os.path.basename(filename)))
