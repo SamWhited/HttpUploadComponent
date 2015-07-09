@@ -19,6 +19,7 @@ except ImportError:
     # Python 2
     from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
     from SocketServer import ThreadingMixIn
+    FileNotFoundError = IOError
 import sleekxmpp
 from sleekxmpp.componentxmpp import ComponentXMPP
 
@@ -116,7 +117,7 @@ class HttpHandler(BaseHTTPRequestHandler):
         global config
         path = normalize_path(self.path[1:])
         slashcount = path.count('/')
-        if slashcount < 1 or slashcount > 2:
+        if path[0] in ('/', '\\') or slashcount < 1 or slashcount > 2:
             self.send_response(404,'file not found')
             self.end_headers()
         else:
@@ -139,7 +140,7 @@ class HttpHandler(BaseHTTPRequestHandler):
         global config
         path = normalize_path(self.path[1:])
         slashcount = path.count('/')
-        if slashcount < 1 or slashcount > 2:
+        if path[0] in ('/', '\\') or slashcount < 1 or slashcount > 2:
             self.send_response(404,'file not found')
             self.end_headers()
         else:
@@ -173,7 +174,7 @@ if __name__ == "__main__":
     server = ThreadedHTTPServer(('0.0.0.0', config['http_port']), HttpHandler)
     xmpp = MissingComponent(config['jid'],config['secret'])
     if xmpp.connect():
-        xmpp.process(block=False)
+        xmpp.process()
         print("connected")
         server.serve_forever()
     else:
