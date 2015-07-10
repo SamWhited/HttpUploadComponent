@@ -9,6 +9,7 @@ import string
 import hashlib
 import random
 import os
+import ssl
 from threading import Thread
 from threading import Lock
 try:
@@ -172,6 +173,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                             format='%(levelname)-8s %(message)s')
     server = ThreadedHTTPServer(('0.0.0.0', config['http_port']), HttpHandler)
+    if 'keyfile' in config and 'certfile' in config:
+        server.socket = ssl.wrap_socket(server.socket, keyfile=config['keyfile'], certfile=config['certfile'])
     xmpp = MissingComponent(config['jid'],config['secret'])
     if xmpp.connect():
         xmpp.process()
