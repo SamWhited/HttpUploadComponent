@@ -10,6 +10,7 @@ import hashlib
 import random
 import os
 import ssl
+import argparse
 from threading import Thread
 from threading import Lock
 try:
@@ -23,6 +24,8 @@ except ImportError:
     FileNotFoundError = IOError
 import sleekxmpp
 from sleekxmpp.componentxmpp import ComponentXMPP
+
+LOGLEVEL=logging.DEBUG
 
 global files
 global files_lock
@@ -165,13 +168,19 @@ if __name__ == "__main__":
     global files_lock
     global config
 
-    with open('config.yml','r') as ymlfile:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--config", type=unicode, default='config.yml', help='Specify alternate config file.')
+    parser.add_argument("-l", "--logfile", type=unicode, default=None, help='File where the server log will be stored. If not specified log to stdout.')
+    args = parser.parse_args()
+
+    with open(args.config,'r') as ymlfile:
         config = yaml.load(ymlfile)
 
     files = set()
     files_lock = Lock()
-    logging.basicConfig(level=logging.DEBUG,
-                            format='%(levelname)-8s %(message)s')
+    logging.basicConfig(level=LOGLEVEL,
+                            format='%(asctime)-24s %(levelname)-8s %(message)s',
+                            filename=args.logfile)
     server = ThreadedHTTPServer(('0.0.0.0', config['http_port']), HttpHandler)
     if 'keyfile' in config and 'certfile' in config:
         server.socket = ssl.wrap_socket(server.socket, keyfile=config['keyfile'], certfile=config['certfile'])
