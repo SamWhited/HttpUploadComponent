@@ -13,12 +13,15 @@ Configuration happens in config.yml and is pretty straight forward.
 
 ```get_url``` and ```put_url``` are prefixes to the URLs. The put_url is usually a combination of your hostname and the port (Port can be ommited if HTTP default ports are being used) The GET URL can use a different host if you want to serve files using a standard nginx or another HTTP server that might be more suitable for serving files than a python script.
 
-For security purposes you should put the python script behind an HTTPS proxy or stunnel (remember to adapt the URLs)
+For security purposes you should put the python script behind an HTTPS proxy or stunnel (remember to adapt the URLs).
+For quicker results you can also use the build in TLS encryption by setting the ```keyfile``` and ```certfile``` in the config file.
 
 ###Run
 Running the component is as easy as invoking ```python server.py```
 
+Some (unoffical) init scripts can be found in the contrib directory.
+
 Feel free to write your own init scripts if necessary and contribute them back by creating a pull request.
 
 ###Clients
-Currently the only client with build in support is [Conversations](http://conversations.im). (unreleased version 1.5). Conversations uses this to send files to Multi User Conferences and to multiple resources in 1 on 1 chats.
+Currently the only client with build in support is [Conversations](http://conversations.im) where it is being used to send files to Multi User Conferences and to multiple resources in 1 on 1 chats.
