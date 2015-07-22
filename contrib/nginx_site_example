@@ -1,0 +1,30 @@
+server {
+    listen       *:443;
+    server_name  upload.yoursite.tld;
+
+    ssl                  on;
+    ssl_certificate      yourcert.pem
+    ssl_certificate_key  yourprivatekey.key;
+
+    # Add other protocols here if you need them. TLSv1 and TLSv1.1 might be required if you use old clients.
+    ssl_protocols  TLSv1.2;
+    # Not very backwards compatible, but very secure. Choose something that suites you.
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH;
+    # The default cipher:
+    # ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers   on;
+
+    root /var/www/blobstorage; # The `storage_path` from your component config
+
+    # If you set `get_url` and `put_url` to include a custom path, be sure to change location to match
+    # or split this out into multiple location blocks.
+    location / {
+        limit_except GET {
+            proxy_pass       http://[::]:8284; # `http_port` from the component config
+        }
+        proxy_set_header Host        $host;
+        charset          utf-8;
+        add_header       Strict-Transport-Security "max-age=31536000; includeSubdomains";
+        add_header       X-Frame-Options           DENY;
+    }
+}
