@@ -16,6 +16,9 @@ Configuration happens in config.yml and is pretty straight forward.
 For security purposes you should put the python script behind an HTTPS proxy or stunnel (remember to adapt the URLs).
 For quicker results you can also use the build in TLS encryption by setting the ```keyfile``` and ```certfile``` in the config file.
 
+
+For the configuration on the XMPP server side have a look into the contrib directory or check the server documentation.
+
 ###Run
 Running the component is as easy as invoking ```python server.py```
 
