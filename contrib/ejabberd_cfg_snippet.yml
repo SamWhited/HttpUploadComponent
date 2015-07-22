@@ -1,0 +1,15 @@
+modules:
+  mod_disco:
+    extra_domains:
+      - "upload.yourdomain.tld"
+
+listen:
+  -
+    port: 5347
+    module: ejabberd_service
+    access: all
+    shaper_rule: fast
+    ip: "::"
+    hosts:
+      "upload.yourdomain.tld":
+        password: "yoursecret"
