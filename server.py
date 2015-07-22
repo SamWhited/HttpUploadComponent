@@ -181,7 +181,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=LOGLEVEL,
                             format='%(asctime)-24s %(levelname)-8s %(message)s',
                             filename=args.logfile)
-    server = ThreadedHTTPServer(('0.0.0.0', config['http_port']), HttpHandler)
+    server = ThreadedHTTPServer((config['http_address'], config['http_port']), HttpHandler)
     if 'keyfile' in config and 'certfile' in config:
         server.socket = ssl.wrap_socket(server.socket, keyfile=config['keyfile'], certfile=config['certfile'])
     xmpp = MissingComponent(config['jid'],config['secret'])
