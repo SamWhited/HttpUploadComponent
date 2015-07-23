@@ -103,13 +103,12 @@ class HttpHandler(BaseHTTPRequestHandler):
                 filename = os.path.join(config['storage_path'], path)
                 os.makedirs(os.path.dirname(filename))
                 remaining = length
-                f = open(filename,'wb')
-                data = self.rfile.read(4096)
-                while data and remaining >= 0:
-                    remaining -= len(data)
-                    f.write(data)
-                    data = self.rfile.read(min(4096,remaining))
-                f.close()
+                with open(filename,'wb') as f:
+                    data = self.rfile.read(4096)
+                    while data and remaining >= 0:
+                        remaining -= len(data)
+                        f.write(data)
+                        data = self.rfile.read(min(4096,remaining))
                 self.send_response(200,'ok')
                 self.end_headers()
             else:
