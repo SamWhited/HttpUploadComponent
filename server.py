@@ -133,7 +133,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                 self.send_response(403,'invalid slot')
                 self.end_headers()
 
-    def do_GET(self):
+    def do_GET(self, body=True):
         global config
         path = normalize_path(self.path[1:])
         slashcount = path.count('/')
@@ -154,29 +154,14 @@ class HttpHandler(BaseHTTPRequestHandler):
                     fs = os.fstat(f.fileno())
                     self.send_header("Content-Length", str(fs.st_size))
                     self.end_headers()
-                    shutil.copyfileobj(f, self.wfile)
+                    if body:
+                        shutil.copyfileobj(f, self.wfile)
             except FileNotFoundError:
                 self.send_response(404,'file not found')
                 self.end_headers()
 
     def do_HEAD(self):
-        global config
-        path = normalize_path(self.path[1:])
-        slashcount = path.count('/')
-        if path[0] in ('/', '\\') or slashcount < 1 or slashcount > 2:
-            self.send_response(404,'file not found')
-            self.end_headers()
-        else:
-            try:
-                filename = os.path.join(config['storage_path'], path)
-                self.send_response(200,'OK')
-                self.send_header("Content-Type", 'application/octet-stream')
-                self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(os.path.basename(filename)))
-                self.send_header("Content-Length",str(os.path.getsize(filename)))
-                self.end_headers()
-            except FileNotFoundError:
-                self.send_response(404,'file not found')
-                self.end_headers()
+        self.do_GET(body=False)
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
