@@ -146,7 +146,10 @@ class HttpHandler(BaseHTTPRequestHandler):
             try:
                 with open(filename,'rb') as f:
                     self.send_response(200)
-                    self.send_header("Content-Type", 'application/octet-stream')
+                    mime, _ = mimetypes.guess_type(filename)
+                    if mime is None:
+                        mime = 'application/octet-stream'
+                    self.send_header("Content-Type", mime)
                     self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(os.path.basename(filename)))
                     fs = os.fstat(f.fileno())
                     self.send_header("Content-Length", str(fs.st_size))
