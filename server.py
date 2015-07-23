@@ -1,18 +1,24 @@
 #!/usr/bin/env python
 
-import yaml
-import sys
+import argparse
+import errno
+import hashlib
+import logging
+import mimetypes
+import os
+import random
 import shutil
 import signal
-import logging
-import string
-import hashlib
-import random
-import os
+import sleekxmpp
 import ssl
-import argparse
-from threading import Thread
+import string
+import sys
+import yaml
+
+from sleekxmpp.componentxmpp import ComponentXMPP
 from threading import Lock
+from threading import Thread
+
 try:
     # Python 3
     from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -21,9 +27,20 @@ except ImportError:
     # Python 2
     from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
     from SocketServer import ThreadingMixIn
-    FileNotFoundError = IOError
-import sleekxmpp
-from sleekxmpp.componentxmpp import ComponentXMPP
+
+try:
+    FileNotFoundError
+except NameError:
+    # Python 2
+    class FileNotFoundError(IOError):
+        def __init__(self, message=None, *args):
+            super(FileNotFoundError, self).__init__(args)
+            self.message = message
+            self.errno = errno.ENOENT
+
+        def __str__(self):
+            return self.message or os.strerror(self.errno)
+
 
 LOGLEVEL=logging.DEBUG
 
