@@ -1,18 +1,24 @@
 #!/usr/bin/env python
 
-import yaml
-import sys
+import argparse
+import errno
+import hashlib
+import logging
+import mimetypes
+import os
+import random
 import shutil
 import signal
-import logging
-import string
-import hashlib
-import random
-import os
+import sleekxmpp
 import ssl
-import argparse
-from threading import Thread
+import string
+import sys
+import yaml
+
+from sleekxmpp.componentxmpp import ComponentXMPP
 from threading import Lock
+from threading import Thread
+
 try:
     # Python 3
     from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -21,9 +27,20 @@ except ImportError:
     # Python 2
     from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
     from SocketServer import ThreadingMixIn
-    FileNotFoundError = IOError
-import sleekxmpp
-from sleekxmpp.componentxmpp import ComponentXMPP
+
+try:
+    FileNotFoundError
+except NameError:
+    # Python 2
+    class FileNotFoundError(IOError):
+        def __init__(self, message=None, *args):
+            super(FileNotFoundError, self).__init__(args)
+            self.message = message
+            self.errno = errno.ENOENT
+
+        def __str__(self):
+            return self.message or os.strerror(self.errno)
+
 
 LOGLEVEL=logging.DEBUG
 
@@ -103,13 +120,12 @@ class HttpHandler(BaseHTTPRequestHandler):
                 filename = os.path.join(config['storage_path'], path)
                 os.makedirs(os.path.dirname(filename))
                 remaining = length
-                f = open(filename,'wb')
-                data = self.rfile.read(min(4096,remaining))
-                while data and remaining >= 0:
-                    remaining -= len(data)
-                    f.write(data)
+                with open(filename,'wb') as f:
                     data = self.rfile.read(min(4096,remaining))
-                f.close()
+                    while data and remaining >= 0:
+                        remaining -= len(data)
+                        f.write(data)
+                        data = self.rfile.read(min(4096,remaining))
                 self.send_response(200,'ok')
                 self.end_headers()
             else:
@@ -117,7 +133,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                 self.send_response(403,'invalid slot')
                 self.end_headers()
 
-    def do_GET(self):
+    def do_GET(self, body=True):
         global config
         path = normalize_path(self.path[1:])
         slashcount = path.count('/')
@@ -130,34 +146,22 @@ class HttpHandler(BaseHTTPRequestHandler):
             try:
                 with open(filename,'rb') as f:
                     self.send_response(200)
-                    self.send_header("Content-Type", 'application/octet-stream')
+                    mime, _ = mimetypes.guess_type(filename)
+                    if mime is None:
+                        mime = 'application/octet-stream'
+                    self.send_header("Content-Type", mime)
                     self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(os.path.basename(filename)))
                     fs = os.fstat(f.fileno())
                     self.send_header("Content-Length", str(fs.st_size))
                     self.end_headers()
-                    shutil.copyfileobj(f, self.wfile)
+                    if body:
+                        shutil.copyfileobj(f, self.wfile)
             except FileNotFoundError:
                 self.send_response(404,'file not found')
                 self.end_headers()
 
     def do_HEAD(self):
-        global config
-        path = normalize_path(self.path[1:])
-        slashcount = path.count('/')
-        if path[0] in ('/', '\\') or slashcount < 1 or slashcount > 2:
-            self.send_response(404,'file not found')
-            self.end_headers()
-        else:
-            try:
-                filename = os.path.join(config['storage_path'], path)
-                self.send_response(200,'OK')
-                self.send_header("Content-Type", 'application/octet-stream')
-                self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(os.path.basename(filename)))
-                self.send_header("Content-Length",str(os.path.getsize(filename)))
-                self.end_headers()
-            except FileNotFoundError:
-                self.send_response(404,'file not found')
-                self.end_headers()
+        self.do_GET(body=False)
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
