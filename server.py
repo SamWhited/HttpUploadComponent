@@ -104,7 +104,7 @@ class HttpHandler(BaseHTTPRequestHandler):
                 os.makedirs(os.path.dirname(filename))
                 remaining = length
                 f = open(filename,'wb')
-                data = self.rfile.read(4096)
+                data = self.rfile.read(min(4096,remaining))
                 while data and remaining >= 0:
                     remaining -= len(data)
                     f.write(data)
@@ -169,8 +169,8 @@ if __name__ == "__main__":
     global config
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", type=unicode, default='config.yml', help='Specify alternate config file.')
-    parser.add_argument("-l", "--logfile", type=unicode, default=None, help='File where the server log will be stored. If not specified log to stdout.')
+    parser.add_argument("-c", "--config", default='config.yml', help='Specify alternate config file.')
+    parser.add_argument("-l", "--logfile",  default=None, help='File where the server log will be stored. If not specified log to stdout.')
     args = parser.parse_args()
 
     with open(args.config,'r') as ymlfile:
