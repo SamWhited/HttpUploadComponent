@@ -37,6 +37,36 @@ config file.
 For the configuration of the XMPP server side have a look into the contrib
 directory or check the server documentation.
 
+#### Expiry and user quotas
+
+Expiry and user quotas are controlled by four config options:
+
+```expire_interval``` determines how often (in seconds) files should be
+deleted. As every expiry run needs to check all uploaded files of all
+users this should not be set too small.
+
+Files older than ```expire_maxage``` (in seconds) will be deleted by an
+expiry run. Set this to ```0``` to disable deletions based on file age.
+
+After an expiry run at most ```user_quota_soft``` space (in bytes) will be
+occupied per user. The oldest files will be deleted first until the occupied
+space is less than ```user_quota_soft```. Set this to ```0``` to disable
+file deletions based on a users occupied space.
+
+```user_quota_hard``` sets a hard limit how much space (in bytes) a user
+may occupy. If an upload would make his files exceed this size it will be
+rejected. This setting is not dependend on ```expire_interval```. Set
+this to ```0``` to disable upload rejection based on occupied space.
+
+```expire_maxage``` and ```user_quota_soft``` depend on ```expire_interval```.
+
+```user_quota_hard``` is honoured even without expiry runs. But some kind
+of expiry is recommended otherwise a user will not be able to upload
+anymore files once his hard quota is reached.
+
+The difference between ```user_quota_hard``` and ```user_quota_soft```
+determines how much a user may upload per ```expire_interval```.
+
 ### Run
 
 Running the component is as easy as invoking ```python server.py```
