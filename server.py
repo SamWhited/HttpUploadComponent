@@ -88,8 +88,6 @@ class MissingComponent(ComponentXMPP):
             path = os.path.join(sender_hash, folder)
             if sane_filename:
                 path = os.path.join(path, sane_filename)
-            with files_lock:
-                files.add(path)
             print(path)
             reply = iq.reply()
             if config['storage_type'] == 's3':
@@ -111,6 +109,8 @@ class MissingComponent(ComponentXMPP):
                     }
                 )
             else:
+                with files_lock:
+                    files.add(path)
                 reply['slot']['get'] = os.path.join(config['get_url'], path)
                 reply['slot']['put'] = os.path.join(config['put_url'], path)
             reply.send()
@@ -211,7 +211,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=LOGLEVEL,
                             format='%(asctime)-24s %(levelname)-8s %(message)s',
                             filename=args.logfile)
-    if config['storage_type'] != 's3':
+    if config['storage_type'] == 'local':
         server = ThreadedHTTPServer((config['http_address'], config['http_port']), HttpHandler)
         if 'keyfile' in config and 'certfile' in config:
             server.socket = ssl.wrap_socket(server.socket, keyfile=config['keyfile'], certfile=config['certfile'])
@@ -219,7 +219,7 @@ if __name__ == "__main__":
     if xmpp.connect():
         xmpp.process()
         print("connected")
-        if config['storage_type'] != 's3':
+        if config['storage_type'] == 'local':
             server.serve_forever()
     else:
         print("unable to connect")
