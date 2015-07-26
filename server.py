@@ -15,6 +15,7 @@ import string
 import sys
 import yaml
 
+from boto.s3.connection import S3Connection
 from sleekxmpp.componentxmpp import ComponentXMPP
 from threading import Lock
 from threading import Thread
@@ -61,6 +62,12 @@ class MissingComponent(ComponentXMPP):
         self.register_plugin('xep_0030')
         self.register_plugin('upload',module='plugins.upload')
         self.add_event_handler('request_upload_slot',self.request_upload_slot)
+        if config['storage_type'] == 's3':
+            self.s3_conn = S3Connection(
+                aws_access_key_id=config['aws_access_key_id'],
+                aws_secret_access_key=config['aws_secret_access_key'],
+                is_secure=True
+            )
 
     def request_upload_slot(self, iq):
         global config
@@ -85,8 +92,27 @@ class MissingComponent(ComponentXMPP):
                 files.add(path)
             print(path)
             reply = iq.reply()
-            reply['slot']['get'] = os.path.join(config['get_url'], path)
-            reply['slot']['put'] = os.path.join(config['put_url'], path)
+            if config['storage_type'] == 's3':
+                mime, _ = mimetypes.guess_type(request['filename'])
+                if mime is None:
+                    mime = 'application/octet-stream'
+                reply['slot']['get'] = os.path.join(
+                    config['get_url'],
+                    path
+                )
+                reply['slot']['put'] = self.s3_conn.generate_url(
+                    config['storage_put_timeout'],
+                    'PUT',
+                    bucket=config['aws_s3_bucket'],
+                    key=path,
+                    headers={
+                        'Content-Length': str(request['size']),
+                        'Content-Type': mime
+                    }
+                )
+            else:
+                reply['slot']['get'] = os.path.join(config['get_url'], path)
+                reply['slot']['put'] = os.path.join(config['put_url'], path)
             reply.send()
         else:
            self. _sendError(iq,'cancel','not-allowed','not allowed to request upload slots')
@@ -185,13 +211,15 @@ if __name__ == "__main__":
     logging.basicConfig(level=LOGLEVEL,
                             format='%(asctime)-24s %(levelname)-8s %(message)s',
                             filename=args.logfile)
-    server = ThreadedHTTPServer((config['http_address'], config['http_port']), HttpHandler)
-    if 'keyfile' in config and 'certfile' in config:
-        server.socket = ssl.wrap_socket(server.socket, keyfile=config['keyfile'], certfile=config['certfile'])
+    if config['storage_type'] != 's3':
+        server = ThreadedHTTPServer((config['http_address'], config['http_port']), HttpHandler)
+        if 'keyfile' in config and 'certfile' in config:
+            server.socket = ssl.wrap_socket(server.socket, keyfile=config['keyfile'], certfile=config['certfile'])
     xmpp = MissingComponent(config['jid'],config['secret'])
     if xmpp.connect():
         xmpp.process()
         print("connected")
-        server.serve_forever()
+        if config['storage_type'] != 's3':
+            server.serve_forever()
     else:
         print("unable to connect")

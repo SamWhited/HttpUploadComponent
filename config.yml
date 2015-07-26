@@ -1,11 +1,26 @@
 jid: upload.yourdomain.tld
 secret: yoursecret
-storage_path : ./
 whitelist:
   - yourdomain.tld
   - someotherdomain.tld
 max_file_size: 20971520 #20MiB
 http_address: 127.0.0.1 #use 0.0.0.0 if you don't want to use a proxy
 http_port: 8080
-get_url : http://upload.yoursite.tld:8080
-put_url : http://upload.yoursite.tld:8080
+
+# Global storage options
+# The storage location, one of:
+#   - local
+#   - s3
+storage_type: local
+get_url: https://upload.yoursite.tld:8080
+put_url: https://upload.yoursite.tld:8080
+
+# Local storage options (storage_type: local)
+storage_path: ./
+
+# AWS S3 storage options (storage_type: s3)
+# aws_access_key_id: yourawskey
+# aws_secret_access_key: yourawssecret
+# aws_s3_bucket: xmpp-http-upload-yourawskey
+# get_url: https://s3-yourregion.amazonaws.com/yourbucket/
+# storage_put_timeout: 60
