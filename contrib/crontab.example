@@ -1,0 +1,5 @@
+# Every day at 03:00 remove all files older than 30 days. See the man find note
+# on -atime for rounding error information. If you'd rather only remove files
+# that haven't been accessed for 30 days (and you don't have your drive mounted
+# with the noatime option), use -atime instead.
+0 3 * * * * find /var/www/blobstorage -ctime +30 -type f -exec rm -f \{\} \; >/dev/null 2>&1
