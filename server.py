@@ -8,16 +8,12 @@ import mimetypes
 import os
 import random
 import shutil
-import signal
-import sleekxmpp
 import ssl
 import string
-import sys
 import yaml
 
 from sleekxmpp.componentxmpp import ComponentXMPP
 from threading import Lock
-from threading import Thread
 
 try:
     # Python 3
@@ -150,7 +146,8 @@ class HttpHandler(BaseHTTPRequestHandler):
                     if mime is None:
                         mime = 'application/octet-stream'
                     self.send_header("Content-Type", mime)
-                    self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(os.path.basename(filename)))
+                    if mime[:6] != 'image/':
+                        self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(os.path.basename(filename)))
                     fs = os.fstat(f.fileno())
                     self.send_header("Content-Length", str(fs.st_size))
                     self.end_headers()
@@ -174,7 +171,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", default='config.yml', help='Specify alternate config file.')
-    parser.add_argument("-l", "--logfile",  default=None, help='File where the server log will be stored. If not specified log to stdout.')
+    parser.add_argument("-l", "--logfile", default=None, help='File where the server log will be stored. If not specified log to stdout.')
     args = parser.parse_args()
 
     with open(args.config,'r') as ymlfile:
