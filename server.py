@@ -129,8 +129,8 @@ def expire(quotaonly=False, kill_event=None):
 
 
 class MissingComponent(ComponentXMPP):
-    def __init__(self, jid, secret):
-        ComponentXMPP.__init__(self, jid, secret, "localhost", 5347)
+    def __init__(self, jid, secret, port):
+        ComponentXMPP.__init__(self, jid, secret, "localhost", port)
         self.register_plugin('xep_0030')
         self.register_plugin('upload',module='plugins.upload')
         self.add_event_handler('request_upload_slot',self.request_upload_slot)
@@ -302,8 +302,11 @@ if __name__ == "__main__":
         sys.exit(1)
 
     if 'keyfile' in config and 'certfile' in config:
-        server.socket = ssl.wrap_socket(server.socket, keyfile=config['keyfile'], certfile=config['certfile'])
-    xmpp = MissingComponent(config['jid'],config['secret'])
+        server.socket = ssl.wrap_socket(server.socket, keyfile=config['http_keyfile'], certfile=config['http_certfile'])
+    jid = config['component_jid']
+    secret = config['component_secret']
+    port = int(config.get('component_port',5347)
+    xmpp = MissingComponent(jid,secret,port)
     if xmpp.connect():
         xmpp.process()
         print("connected")
