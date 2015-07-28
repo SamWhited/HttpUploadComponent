@@ -17,6 +17,7 @@ import yaml
 from sleekxmpp.componentxmpp import ComponentXMPP
 from threading import Event
 from threading import Lock
+from threading import Thread
 
 try:
     # Python 3
