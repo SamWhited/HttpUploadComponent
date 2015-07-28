@@ -10,9 +10,12 @@ import random
 import shutil
 import ssl
 import string
+import sys
+import time
 import yaml
 
 from sleekxmpp.componentxmpp import ComponentXMPP
+from threading import Event
 from threading import Lock
 
 try:
@@ -43,6 +46,7 @@ LOGLEVEL=logging.DEBUG
 global files
 global files_lock
 global config
+global quotas
 
 def normalize_path(path):
     """
@@ -50,6 +54,78 @@ def normalize_path(path):
     and the like.
     """
     return os.path.normcase(os.path.normpath(path))
+
+def expire(quotaonly=False, kill_event=None):
+    """
+    Expire all files over 'user_quota_soft' and older than 'expire_maxage'
+
+        - quotaonly - If true don't delete anything just calculate the
+          used space per user and return. Otherwise make an exiry run
+          every config['expire_interval'] seconds.
+        - kill_event - threading.Event to listen to. When set, quit to
+          prevent hanging on KeyboardInterrupt. Only applicable when
+          quotaonly = False
+    """
+    global config
+    global quotas
+
+    while True:
+        if not quotaonly:
+            # Wait expire_interval secs or return on kill_event
+            if kill_event.wait(config['expire_interval']):
+                return
+
+        now = time.time()
+        # Scan each senders upload directories seperatly
+        for sender in os.listdir(config['storage_path']):
+            senderdir = os.path.join(config['storage_path'], sender)
+            quota = 0
+            filelist = []
+            # Traverse sender directory, delete anything older expire_maxage and collect file stats.
+            for dirname, dirs, files in os.walk(senderdir, topdown=False):
+                removed = []
+                for name in files:
+                    fullname = os.path.join(dirname, name)
+                    stats = os.stat(fullname)
+                    if not quotaonly:
+                        if now - stats.st_mtime > config['expire_maxage']:
+                            logging.debug('Expiring %s. Age: %s', fullname, now - stats.st_mtime)
+                            try:
+                                os.unlink(fullname)
+                                removed += [name]
+                            except OSError as e:
+                                logging.warning("Exception '%s' deleting file '%s'.", e, fullname)
+                                quota += stats.st_size
+                                filelist += [(stats.st_mtime, fullname, stats.st_size)]
+                        else:
+                            quota += stats.st_size
+                            filelist += [(stats.st_mtime, fullname, stats.st_size)]
+                if dirs == [] and removed == files:    # Directory is empty, so we can remove it
+                    logging.debug('Removing directory %s.', dirname)
+                    try:
+                            os.rmdir(dirname)
+                    except OSError as e:
+                            logging.warning("Exception '%s' deleting directory '%s'.", e, dirname)
+
+            if not quotaonly and config['user_quota_soft']:
+                # Delete oldest files of sender until occupied space is <= user_quota_soft
+                filelist.sort()
+                while quota > config['user_quota_soft']:
+                    entry = filelist[0]
+                    try:
+                        logging.debug('user_quota_soft exceeded. Removing %s. Age: %s', entry[1], now - entry[0])
+                        os.unlink(entry[1])
+                        quota -= entry[2]
+                    except OSError as e:
+                        logging.warning("Exception '%s' deleting file '%s'.", e, entry[1])
+                    filelist.pop(0)
+            quotas[sender] = quota
+
+        logging.debug('Expire run finished in %fs', time.time() - now)
+
+        if quotaonly:
+            return
+
 
 class MissingComponent(ComponentXMPP):
     def __init__(self, jid, secret):
@@ -71,6 +147,11 @@ class MissingComponent(ComponentXMPP):
         elif 'whitelist' not in config or iq['from'].domain in config['whitelist']:
             sender = iq['from'].bare
             sender_hash = hashlib.sha1(sender.encode()).hexdigest()
+            if config['user_quota_hard'] and quotas.setdefault(sender_hash, 0) + int(request['size']) > config['user_quota_hard']:
+                msg = 'quota would be exceeded. max file size is %d' % (config['user_quota_hard'] - quotas[sender_hash])
+                logging.debug(msg)
+                self._sendError(iq, 'modify', 'not-acceptable', msg)
+                return
             filename = request['filename']
             folder = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(len(sender_hash)))
             sane_filename = "".join([c for c in filename if c.isalpha() or c.isdigit() or c=="."]).rstrip()
@@ -85,7 +166,7 @@ class MissingComponent(ComponentXMPP):
             reply['slot']['put'] = os.path.join(config['put_url'], path)
             reply.send()
         else:
-           self. _sendError(iq,'cancel','not-allowed','not allowed to request upload slots')
+            self._sendError(iq,'cancel','not-allowed','not allowed to request upload slots')
 
     def _sendError(self, iq, error_type, condition, text):
         reply = iq.reply()
@@ -104,6 +185,9 @@ class HttpHandler(BaseHTTPRequestHandler):
         path = normalize_path(self.path[1:])
         length = int(self.headers['Content-Length'])
         maxfilesize = int(config['max_file_size'])
+        if config['user_quota_hard']:
+            sender_hash = path.split('/')[0]
+            maxfilesize = min(maxfilesize, config['user_quota_hard'] - quotas.setdefault(sender_hash, 0))
         if maxfilesize < length:
             self.send_response(400,'file too large')
             self.end_headers()
@@ -119,7 +203,10 @@ class HttpHandler(BaseHTTPRequestHandler):
                 with open(filename,'wb') as f:
                     data = self.rfile.read(min(4096,remaining))
                     while data and remaining >= 0:
-                        remaining -= len(data)
+                        databytes = len(data)
+                        remaining -= databytes
+                        if config['user_quota_hard']:
+                            quotas[sender_hash] += databytes
                         f.write(data)
                         data = self.rfile.read(min(4096,remaining))
                 self.send_response(200,'ok')
@@ -165,10 +252,6 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
 
 if __name__ == "__main__":
-    global files
-    global files_lock
-    global config
-
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", default='config.yml', help='Specify alternate config file.')
     parser.add_argument("-l", "--logfile", default=None, help='File where the server log will be stored. If not specified log to stdout.')
@@ -179,16 +262,59 @@ if __name__ == "__main__":
 
     files = set()
     files_lock = Lock()
+    kill_event = Event()
     logging.basicConfig(level=LOGLEVEL,
                             format='%(asctime)-24s %(levelname)-8s %(message)s',
                             filename=args.logfile)
-    server = ThreadedHTTPServer((config['http_address'], config['http_port']), HttpHandler)
+
+    # Sanitize config['user_quota_*'] and calculate initial quotas
+    quotas = {}
+    try:
+        config['user_quota_hard'] = int(config.get('user_quota_hard', 0))
+        config['user_quota_soft'] = int(config.get('user_quota_soft', 0))
+        if config['user_quota_soft'] or config['user_quota_hard']:
+            expire(quotaonly=True)
+    except ValueError:
+        logging.warning("Invalid user_quota_hard ('%s') or user_quota_soft ('%s'). Quotas disabled.", config['user_quota_soft'], config['user_quota_soft'])
+        config['user_quota_soft'] = 0
+        config['user_quota_hard'] = 0
+
+    # Sanitize config['expire_*'] and start expiry thread
+    try:
+        config['expire_interval'] = float(config.get('expire_interval', 0))
+        config['expire_maxage'] = float(config.get('expire_maxage', 0))
+        if config['expire_interval'] > 0 and (config['user_quota_soft'] or config['expire_maxage']):
+            t = Thread(target=expire, kwargs={'kill_event': kill_event})
+            t.start()
+        else:
+            logging.info('Expiring disabled.')
+    except ValueError:
+        logging.warning("Invalid expire_interval ('%s') or expire_maxage ('%s') set in config file. Expiring disabled.",
+                        config['expire_interval'], config['expire_maxage'])
+
+    try:
+        server = ThreadedHTTPServer((config['http_address'], config['http_port']), HttpHandler)
+    except Exception as e:
+        import traceback
+        logging.debug(traceback.format_exc())
+        kill_event.set()
+        sys.exit(1)
+
     if 'keyfile' in config and 'certfile' in config:
         server.socket = ssl.wrap_socket(server.socket, keyfile=config['keyfile'], certfile=config['certfile'])
     xmpp = MissingComponent(config['jid'],config['secret'])
     if xmpp.connect():
         xmpp.process()
         print("connected")
-        server.serve_forever()
+        try:
+            server.serve_forever()
+        except (KeyboardInterrupt, Exception) as e:
+            if e == KeyboardInterrupt:
+                logging.debug('Ctrl+C pressed')
+            else:
+                import traceback
+                logging.debug(traceback.format_exc())
+            kill_event.set()
     else:
         print("unable to connect")
+        kill_event.set()
