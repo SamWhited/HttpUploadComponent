@@ -305,7 +305,7 @@ if __name__ == "__main__":
         server.socket = ssl.wrap_socket(server.socket, keyfile=config['http_keyfile'], certfile=config['http_certfile'])
     jid = config['component_jid']
     secret = config['component_secret']
-    port = int(config.get('component_port',5347)
+    port = int(config.get('component_port',5347))
     xmpp = MissingComponent(jid,secret,port)
     if xmpp.connect():
         xmpp.process()
