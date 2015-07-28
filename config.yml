@@ -1,16 +1,22 @@
-jid: upload.yourdomain.tld
-secret: yoursecret
+component_jid: upload.yourdomain.tld
+component_secret: yoursecret
+component_port: 5347
+
 storage_path : ./
+
 whitelist:
   - yourdomain.tld
   - someotherdomain.tld
 max_file_size: 20971520 #20MiB
+
 http_address: 127.0.0.1 #use 0.0.0.0 if you don't want to use a proxy
 http_port: 8080
+#http_keyfile: /etc/ssl/private/your.key
+#http_certfile: /etc/ssl/certs/your.crt
+
 get_url : http://upload.yoursite.tld:8080
 put_url : http://upload.yoursite.tld:8080
-#keyfile: /etc/ssl/private/your.key
-#certfile: /etc/ssl/certs/your.crt
+
 expire_interval: 82800  #time in secs between expiry runs (82800 secs = 23 hours). set to '0' to disable
 expire_maxage: 2592000  #files older than this (in secs) get deleted by expiry runs (2592000 = 30 days)
 user_quota_hard: 104857600   #100MiB. set to '0' to disable rejection on uploads over hard quota
