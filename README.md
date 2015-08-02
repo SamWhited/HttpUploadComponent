@@ -16,8 +16,8 @@ list](http://mail.jabber.org/pipermail/standards/2015-June/029969.html).
 
 Configuration happens in `config.yml` and is pretty straight forward.
 
-```jid``` and ```secret``` have to match the corresponding entries in your XMPP
-server config (Refer to the documentation of your server).
+```component_jid```, ```component_secret``` and ```component_port``` have to match the corresponding entries in your XMPP
+server config (Refer to the documentation of your server). 
 
 ```whitelist``` should contain a list of domains whos JIDs are allowed to
 upload files. Remove the entry if you want to allow everyone (not really
@@ -31,7 +31,7 @@ more suitable for serving files than a python script.
 
 For security purposes you should put the python script behind an HTTPS proxy or
 stunnel (remember to adapt the URLs).  For quicker results you can also use the
-built in TLS encryption by setting ```keyfile``` and ```certfile``` in the
+built in TLS encryption by setting ```http_keyfile``` and ```http_certfile``` in the
 config file.
 
 For the configuration of the XMPP server side have a look into the contrib
