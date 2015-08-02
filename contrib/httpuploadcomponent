@@ -23,6 +23,10 @@ USER=prosody
 export LOGNAME=$USER
 
 test -x $DAEMON || exit 0
+
+# Allow user to override default values listed above
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
 set -e
 
 function _start() {
