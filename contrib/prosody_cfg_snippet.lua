@@ -1,4 +1,4 @@
-disoc_items = {
+disco_items = {
 	{ "upload.yoursite.tld", "request slots to upload files via http"};
 }
 
