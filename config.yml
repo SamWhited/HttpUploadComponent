@@ -7,6 +7,7 @@ storage_path : ./
 whitelist:
   - yourdomain.tld
   - someotherdomain.tld
+  - dude@domain.tld
 max_file_size: 20971520 #20MiB
 
 http_address: 127.0.0.1 #use 0.0.0.0 if you don't want to use a proxy
