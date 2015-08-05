@@ -10,6 +10,7 @@ class upload(base_plugin):
         self.description = "upload files via http"
         self.xep = "0999"
         self.xmpp['xep_0030'].add_feature("eu:siacs:conversations:http:upload")
+        self.xmpp['xep_0030'].add_identity(category='store', itype='file', name='HTTP File Upload')
         self.xmpp.register_handler(
             Callback('Upload request',
                 MatchXPath('{%s}iq/{eu:siacs:conversations:http:upload}request' % self.xmpp.default_ns),
