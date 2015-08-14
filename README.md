@@ -19,7 +19,7 @@ Configuration happens in `config.yml` and is pretty straight forward.
 ```component_jid```, ```component_secret``` and ```component_port``` have to match the corresponding entries in your XMPP
 server config (Refer to the documentation of your server). 
 
-```whitelist``` should contain a list of domains whos JIDs are allowed to
+```whitelist``` should contain a list of domains and/or users whos JIDs are allowed to
 upload files. Remove the entry if you want to allow everyone (not really
 recommended).
 

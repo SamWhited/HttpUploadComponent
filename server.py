@@ -145,7 +145,7 @@ class MissingComponent(ComponentXMPP):
             self._sendError(iq,'modify','bad-request','please specify filename and size')
         elif maxfilesize < int(request['size']):
             self._sendError(iq,'modify','not-acceptable','file too large. max file size is '+str(maxfilesize))
-        elif 'whitelist' not in config or iq['from'].domain in config['whitelist']:
+        elif 'whitelist' not in config or iq['from'].domain in config['whitelist'] or iq['from'].bare in config['whitelist']:
             sender = iq['from'].bare
             sender_hash = hashlib.sha1(sender.encode()).hexdigest()
             if config['user_quota_hard'] and quotas.setdefault(sender_hash, 0) + int(request['size']) > config['user_quota_hard']:
