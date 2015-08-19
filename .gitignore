@@ -1,3 +1,6 @@
+# Config file
+config.yml
+
 # https://github.com/github/gitignore
 # Byte-compiled / optimized / DLL files
 __pycache__/
