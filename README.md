@@ -77,6 +77,6 @@ creating a pull request.
 
 ### Clients
 
-Currently the only client with build in support is
+Currently the only client with built in support is
 [Conversations](http://conversations.im) where it is being used to send files
 to Multi User Conferences and to multiple resources in 1 on 1 chats.
