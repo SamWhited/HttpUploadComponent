@@ -20,10 +20,11 @@ CONFIG=/etc/prosody/HttpUploadComponent.yml
 LOGFILE=/var/log/prosody/httpuploadcomponent.log
 PIDFILE=/var/run/${NAME}.pid
 USER=prosody
-export LOGNAME=$USER
 
 # Allow user to override default values listed above
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+export LOGNAME=$USER
 
 test -x $DAEMON || exit 0
 
