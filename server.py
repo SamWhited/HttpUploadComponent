@@ -248,6 +248,15 @@ class HttpHandler(BaseHTTPRequestHandler):
     def do_HEAD(self):
         self.do_GET(body=False)
 
+    def do_OPTIONS(self):
+        if 'allow_web_clients' in config and config['allow_web_clients']:
+            self.send_response(200, 'OK')
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET,PUT")
+            self.end_headers()
+        else:
+            self.send_response(501, 'NO OPTIONS')
+            self.end_headers()
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
