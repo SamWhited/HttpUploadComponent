@@ -16,6 +16,8 @@ server {
 
     root /var/www/blobstorage; # The `storage_path` from your component config
 
+    client_max_body_size 20m; # Shouldn't be smaller than `max_file_size` in your component config
+
     # If you set `get_url` and `put_url` to include a custom path, be sure to change location to match
     # or split this out into multiple location blocks.
     location / {
