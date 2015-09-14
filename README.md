@@ -77,4 +77,4 @@ creating a pull request.
 ### Clients
 * [Conversations](http://conversations.im) (used to send files to Multi User
 Conferences and to multiple resources in 1 on 1 chats.)
-* Gajim (with a [plugin](https://trac-plugins.gajim.org/wiki/HttpUploadPlugin)
+* Gajim (with a [plugin](https://trac-plugins.gajim.org/wiki/HttpUploadPlugin))
