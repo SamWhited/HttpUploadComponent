@@ -6,6 +6,7 @@ import hashlib
 import logging
 import mimetypes
 import os
+import urlparse
 import random
 import shutil
 import ssl
@@ -49,12 +50,12 @@ global files_lock
 global config
 global quotas
 
-def normalize_path(path):
+def normalize_path(path, sub_url_length):
     """
     Normalizes the URL to prevent users from grabbing arbitrary files via `../'
     and the like.
     """
-    return os.path.normcase(os.path.normpath(path))
+    return os.path.normcase(os.path.normpath(path))[sub_url_length:]
 
 def expire(quotaonly=False, kill_event=None):
     """
@@ -163,8 +164,8 @@ class MissingComponent(ComponentXMPP):
                 files.add(path)
             print(path)
             reply = iq.reply()
-            reply['slot']['get'] = os.path.join(config['get_url'], path)
-            reply['slot']['put'] = os.path.join(config['put_url'], path)
+            reply['slot']['get'] = urlparse.urljoin(config['get_url'], path)
+            reply['slot']['put'] = urlparse.urljoin(config['put_url'], path)
             reply.send()
         else:
             self._sendError(iq,'cancel','not-allowed','not allowed to request upload slots')
@@ -183,7 +184,7 @@ class HttpHandler(BaseHTTPRequestHandler):
         global files
         global files_lock
         global config
-        path = normalize_path(self.path[1:])
+        path = normalize_path(self.path, config['put_sub_url_len'])
         length = int(self.headers['Content-Length'])
         maxfilesize = int(config['max_file_size'])
         if config['user_quota_hard']:
@@ -219,7 +220,7 @@ class HttpHandler(BaseHTTPRequestHandler):
 
     def do_GET(self, body=True):
         global config
-        path = normalize_path(self.path[1:])
+        path = normalize_path(self.path, config['get_sub_url_len'])
         slashcount = path.count('/')
         if path[0] in ('/', '\\') or slashcount < 1 or slashcount > 2:
             self.send_response(404,'file not found')
@@ -276,6 +277,19 @@ if __name__ == "__main__":
     logging.basicConfig(level=LOGLEVEL,
                             format='%(asctime)-24s %(levelname)-8s %(message)s',
                             filename=args.logfile)
+
+    if not config['get_url'].endswith('/'):
+        config['get_url'] = config['get_url'] + '/'
+    if not config['put_url'].endswith('/'):
+        config['put_url'] = config['put_url'] + '/'
+
+    try:
+        config['get_sub_url_len'] = len(urlparse.urlparse(config['get_url']).path)
+        config['put_sub_url_len'] = len(urlparse.urlparse(config['put_url']).path)
+    except ValueError:
+        logging.warning("Invalid get_sub_url ('%s') or put_sub_url ('%s'). sub_url's disabled.", config['get_sub_url'], config['put_sub_url'])
+        config['get_sub_url_int'] = 1
+        config['put_sub_url_int'] = 1
 
     # Sanitize config['user_quota_*'] and calculate initial quotas
     quotas = {}
