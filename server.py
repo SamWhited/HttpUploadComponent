@@ -6,13 +6,13 @@ import hashlib
 import logging
 import mimetypes
 import os
-import urlparse
 import random
 import shutil
 import ssl
 import string
 import sys
 import time
+import urllib.parse
 import yaml
 
 from sleekxmpp.componentxmpp import ComponentXMPP
@@ -20,28 +20,8 @@ from threading import Event
 from threading import Lock
 from threading import Thread
 
-try:
-    # Python 3
-    from http.server import HTTPServer, BaseHTTPRequestHandler
-    from socketserver import ThreadingMixIn
-except ImportError:
-    # Python 2
-    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-    from SocketServer import ThreadingMixIn
-
-try:
-    FileNotFoundError
-except NameError:
-    # Python 2
-    class FileNotFoundError(IOError):
-        def __init__(self, message=None, *args):
-            super(FileNotFoundError, self).__init__(args)
-            self.message = message
-            self.errno = errno.ENOENT
-
-        def __str__(self):
-            return self.message or os.strerror(self.errno)
-
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
 
 LOGLEVEL=logging.DEBUG
 
@@ -164,8 +144,8 @@ class MissingComponent(ComponentXMPP):
                 files.add(path)
             print(path)
             reply = iq.reply()
-            reply['slot']['get'] = urlparse.urljoin(config['get_url'], path)
-            reply['slot']['put'] = urlparse.urljoin(config['put_url'], path)
+            reply['slot']['get'] = urllib.parse.urljoin(config['get_url'], path)
+            reply['slot']['put'] = urllib.parse.urljoin(config['put_url'], path)
             reply.send()
         else:
             self._sendError(iq,'cancel','not-allowed','not allowed to request upload slots')
@@ -284,8 +264,8 @@ if __name__ == "__main__":
         config['put_url'] = config['put_url'] + '/'
 
     try:
-        config['get_sub_url_len'] = len(urlparse.urlparse(config['get_url']).path)
-        config['put_sub_url_len'] = len(urlparse.urlparse(config['put_url']).path)
+        config['get_sub_url_len'] = len(urllib.parse.urlparse(config['get_url']).path)
+        config['put_sub_url_len'] = len(urllib.parse.urlparse(config['put_url']).path)
     except ValueError:
         logging.warning("Invalid get_sub_url ('%s') or put_sub_url ('%s'). sub_url's disabled.", config['get_sub_url'], config['put_sub_url'])
         config['get_sub_url_int'] = 1
