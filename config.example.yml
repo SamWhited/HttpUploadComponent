@@ -22,3 +22,4 @@ expire_interval: 82800  #time in secs between expiry runs (82800 secs = 23 hours
 expire_maxage: 2592000  #files older than this (in secs) get deleted by expiry runs (2592000 = 30 days)
 user_quota_hard: 104857600   #100MiB. set to '0' to disable rejection on uploads over hard quota
 user_quota_soft: 78643200    #75MiB. set to '0' to disable deletion of old uploads over soft quota an expiry runs
+allow_web_clients: true #answer OPTIONS requests to allow web clients to upload files 
