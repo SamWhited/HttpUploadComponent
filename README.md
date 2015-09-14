@@ -9,8 +9,7 @@ connects to that server using the [Jabber Component
 Protocol](http://xmpp.org/extensions/xep-0114.html).
 
 A detailed introduction into the necessity of such a component and the simple
-protocol can be found on the [XMPP Standards email
-list](http://mail.jabber.org/pipermail/standards/2015-June/029969.html).
+protocol can be found in [XEP-0363: HTTP File Upload](http://xmpp.org/extensions/xep-0363.html).
 
 ### Configuration
 
@@ -76,7 +75,6 @@ to write your own init scripts if necessary and contribute them back by
 creating a pull request.
 
 ### Clients
-
-Currently the only client with built in support is
-[Conversations](http://conversations.im) where it is being used to send files
-to Multi User Conferences and to multiple resources in 1 on 1 chats.
+* [Conversations](http://conversations.im) (used to send files to Multi User
+Conferences and to multiple resources in 1 on 1 chats.)
+* Gajim (with a [plugin](https://trac-plugins.gajim.org/wiki/HttpUploadPlugin)
