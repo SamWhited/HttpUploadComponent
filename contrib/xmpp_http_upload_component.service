@@ -4,7 +4,9 @@ After=network.target
 
 [Service]
 type=simple
-ExecStart=/usr/bin/xmpp_http_upload_server.py
+User=uploader
+Group=uploader
+ExecStart=/usr/bin/python3 /opt/HttpUploadComponent/server.py --config /opt/HttpUploadComponent/config.yml
 
 [Install]
 WantedBy=multi-user.target
