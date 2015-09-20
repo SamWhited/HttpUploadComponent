@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import argparse
+import base64
 import errno
 import hashlib
 import logging
@@ -128,15 +129,15 @@ class MissingComponent(ComponentXMPP):
             self._sendError(iq,'modify','not-acceptable','file too large. max file size is '+str(maxfilesize))
         elif 'whitelist' not in config or iq['from'].domain in config['whitelist'] or iq['from'].bare in config['whitelist']:
             sender = iq['from'].bare
-            sender_hash = hashlib.sha1(sender.encode()).hexdigest()
+            sender_hash = base64.urlsafe_b64encode(hashlib.sha1(sender.encode()).digest()).decode('ascii').rstrip('=')
             if config['user_quota_hard'] and quotas.setdefault(sender_hash, 0) + int(request['size']) > config['user_quota_hard']:
                 msg = 'quota would be exceeded. max file size is %d' % (config['user_quota_hard'] - quotas[sender_hash])
                 logging.debug(msg)
                 self._sendError(iq, 'modify', 'not-acceptable', msg)
                 return
             filename = request['filename']
-            folder = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(len(sender_hash)))
-            sane_filename = "".join([c for c in filename if c.isalpha() or c.isdigit() or c=="."]).rstrip()
+            folder = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(int(len(sender_hash) / 2)))
+            sane_filename = "".join([c for c in filename if (c == '_' or c == '.' or ord(c) >= 48 and ord(c) <= 122)]).rstrip()
             path = os.path.join(sender_hash, folder)
             if sane_filename:
                 path = os.path.join(path, sane_filename)
