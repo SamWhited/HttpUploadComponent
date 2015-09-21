@@ -9,7 +9,7 @@ all: test build
 $(VENV): $(VENV)/bin/activate
 
 $(VENV)/bin/activate: requirements.txt
-	test -d $(VENV) || virtualenv -p /usr/bin/python3 $(VENV)
+	test -d $(VENV) || pyvenv $(VENV)
 	$(ACTIVATE); pip install -r requirements.txt
 	touch $(BIN)/activate
 
